@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>20</x>
-     <y>90</y>
+     <y>100</y>
      <width>441</width>
      <height>351</height>
     </rect>
@@ -97,8 +97,8 @@ border-radius : 8px;</string>
   <widget class="QPushButton" name="pushButton_4">
    <property name="geometry">
     <rect>
-     <x>30</x>
-     <y>450</y>
+     <x>20</x>
+     <y>460</y>
      <width>121</width>
      <height>31</height>
     </rect>
