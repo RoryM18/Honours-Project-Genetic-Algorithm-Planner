@@ -16,8 +16,8 @@
   <widget class="QCalendarWidget" name="calendarWidget">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>100</y>
+     <x>10</x>
+     <y>130</y>
      <width>441</width>
      <height>351</height>
     </rect>
@@ -27,17 +27,17 @@
    <property name="geometry">
     <rect>
      <x>490</x>
-     <y>150</y>
+     <y>180</y>
      <width>301</width>
      <height>301</height>
     </rect>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton">
+  <widget class="QPushButton" name="saveButton">
    <property name="geometry">
     <rect>
      <x>490</x>
-     <y>460</y>
+     <y>490</y>
      <width>111</width>
      <height>31</height>
     </rect>
@@ -46,11 +46,11 @@
     <string>Save Changes</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton_2">
+  <widget class="QPushButton" name="addButton">
    <property name="geometry">
     <rect>
-     <x>700</x>
-     <y>110</y>
+     <x>690</x>
+     <y>140</y>
      <width>101</width>
      <height>31</height>
     </rect>
@@ -59,11 +59,11 @@
     <string>Add New Event</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton_3">
+  <widget class="QPushButton" name="deleteButton">
    <property name="geometry">
     <rect>
      <x>680</x>
-     <y>460</y>
+     <y>490</y>
      <width>111</width>
      <height>31</height>
     </rect>
@@ -94,17 +94,47 @@ border-radius : 8px;</string>
     <set>Qt::AlignCenter</set>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton_4">
+  <widget class="QPushButton" name="optimiseButton">
    <property name="geometry">
     <rect>
-     <x>20</x>
-     <y>460</y>
+     <x>10</x>
+     <y>490</y>
      <width>121</width>
      <height>31</height>
     </rect>
    </property>
    <property name="text">
     <string>Optimise Schedule</string>
+   </property>
+  </widget>
+  <widget class="QLineEdit" name="taskLineEdit">
+   <property name="geometry">
+    <rect>
+     <x>500</x>
+     <y>70</y>
+     <width>171</width>
+     <height>31</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QTimeEdit" name="startTimeEdit">
+   <property name="geometry">
+    <rect>
+     <x>510</x>
+     <y>110</y>
+     <width>118</width>
+     <height>22</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QTimeEdit" name="endTimeEdit">
+   <property name="geometry">
+    <rect>
+     <x>510</x>
+     <y>150</y>
+     <width>118</width>
+     <height>22</height>
+    </rect>
    </property>
   </widget>
  </widget>
