@@ -1,4 +1,5 @@
 from PyQt5.QtWidgets import QWidget, QApplication, QListWidgetItem, QMessageBox
+from PyQt5.QtGui import QPainter, QColor
 from PyQt5.uic import loadUi
 from PyQt5 import QtCore
 import sys
@@ -30,11 +31,14 @@ class Window(QWidget):
         conn = sqlite3.connect('data.db')
         cursor = conn.cursor()
 
-        query = "SELECT task, completed FROM planner WHERE date = ?"
+        query = "SELECT task, completed, startTime, endTime FROM planner WHERE ?"
         row = (date,)
         results = cursor.execute(query, row).fetchall()
         for result in results:
-            item = QListWidgetItem(str(result[0]))
+            task = result[0]
+            start_time = result[2]
+            end_time = result[3]
+            item = QListWidgetItem(f"{task} - {start_time} - {end_time}")
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             if result[1] == "YES":
@@ -104,12 +108,20 @@ class Window(QWidget):
             item = self.listWidget.item(i)
             task = item.text()
             if item.checkState() == QtCore.Qt.Checked:
+                # Extract task, start time, and end time for deletion
+                task_parts = task.split(" - ")
+                task = task_parts[0]
+                startTime = task_parts[1]
+                endTime = task_parts[2]
+
                 query = "DELETE FROM planner WHERE task = ? AND date = ? AND startTime = ? AND endTime = ?"
                 row = (task, date, startTime, endTime)
 
                 cursor.execute(query, row)
+                print("Task Deleted")
 
         conn.commit()
+        print("Changes Saved")
 
         self.updateList(self.calendarWidget.selectedDate().toPyDate())
 
