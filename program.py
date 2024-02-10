@@ -31,14 +31,13 @@ class Window(QWidget):
         conn = sqlite3.connect('data.db')
         cursor = conn.cursor()
 
-        query = "SELECT task, completed, startTime, endTime, priority FROM planner WHERE ?"
+        query = "SELECT task, completed, startTime, endTime, priority FROM planner WHERE date = ?"
         row = (date,)
         results = cursor.execute(query, row).fetchall()
 
         priority_mapping = {1: "Low", 2: "Medium", 3: "High"}
 
         for result in results:
-
             task = result[0]
             completed = result[1]
             start_time = result[2]
