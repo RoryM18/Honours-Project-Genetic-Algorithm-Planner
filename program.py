@@ -15,6 +15,7 @@ class Window(QWidget):
         self.saveButton.clicked.connect(self.saveChanges)
         self.addButton.clicked.connect(self.addTask)
         self.deleteButton.clicked.connect(self.deleteTask)
+        self.priorityComboBox.addItems(["High", "Medium", "Low"])
 
 
     def calendarDateChanged(self):
@@ -27,18 +28,25 @@ class Window(QWidget):
     def updateList(self, date):
         self.listWidget.clear()
 
-
         conn = sqlite3.connect('data.db')
         cursor = conn.cursor()
 
-        query = "SELECT task, completed, startTime, endTime FROM planner WHERE ?"
+        query = "SELECT task, completed, startTime, endTime, priority FROM planner WHERE ?"
         row = (date,)
         results = cursor.execute(query, row).fetchall()
+
+        priority_mapping = {1: "Low", 2: "Medium", 3: "High"}
+
         for result in results:
+
             task = result[0]
+            completed = result[1]
             start_time = result[2]
             end_time = result[3]
-            item = QListWidgetItem(f"{task} - {start_time} - {end_time}")
+            priority_value = result[4]
+            priority_word = priority_mapping.get(priority_value, "Unknown")
+
+            item = QListWidgetItem(f"{task} - {start_time} - {end_time} - Priority: {priority_word}")
             item.setFlags(item.flags() | QtCore.Qt.ItemIsUserCheckable)
             item.setCheckState(QtCore.Qt.Unchecked)
             if result[1] == "YES":
@@ -84,8 +92,12 @@ class Window(QWidget):
 
         newEndTime = str(self.endTimeEdit.text())
 
-        query = "INSERT INTO planner (task, completed, date, startTime, endTime) VALUES (?, ?, ?, ?, ?)"
-        row = (newTask, "NO", self.calendarWidget.selectedDate().toPyDate(), newStartTime, newEndTime)
+        # Map priority values based on ComboBox selection
+        priorityMapping = {"High": 3, "Medium": 2, "Low": 1}
+        priority = priorityMapping.get(self.priorityComboBox.currentText(), 0)
+
+        query = "INSERT INTO planner (task, completed, date, startTime, endTime, priority) VALUES (?, ?, ?, ?, ?, ?)"
+        row = (newTask, "NO", self.calendarWidget.selectedDate().toPyDate(), newStartTime, newEndTime, priority)
 
         cursor.execute(query, row)
 
@@ -123,9 +135,12 @@ class Window(QWidget):
         conn.commit()
         print("Changes Saved")
 
+        messageBox = QMessageBox()
+        messageBox.setText("Task has been deleteted")
+        messageBox.setStandardButtons(QMessageBox.Ok)
+        messageBox.exec()
+
         self.updateList(self.calendarWidget.selectedDate().toPyDate())
-
-
 
 
 if __name__ == "__main__":

@@ -137,6 +137,16 @@ border-radius : 8px;</string>
     </rect>
    </property>
   </widget>
+  <widget class="QComboBox" name="priorityComboBox">
+   <property name="geometry">
+    <rect>
+     <x>700</x>
+     <y>70</y>
+     <width>91</width>
+     <height>31</height>
+    </rect>
+   </property>
+  </widget>
  </widget>
  <resources/>
  <connections/>
