@@ -62,7 +62,7 @@
   <widget class="QPushButton" name="deleteButton">
    <property name="geometry">
     <rect>
-     <x>680</x>
+     <x>730</x>
      <y>490</y>
      <width>111</width>
      <height>31</height>
@@ -145,6 +145,19 @@ border-radius : 8px;</string>
      <width>91</width>
      <height>31</height>
     </rect>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="editButton">
+   <property name="geometry">
+    <rect>
+     <x>610</x>
+     <y>490</y>
+     <width>111</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Edit Event</string>
    </property>
   </widget>
  </widget>

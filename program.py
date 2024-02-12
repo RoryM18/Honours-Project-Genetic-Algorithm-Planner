@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWidget, QApplication, QListWidgetItem, QMessageBox
+from PyQt5.QtWidgets import QWidget, QApplication, QListWidgetItem, QMessageBox, QInputDialog, QTimeEdit
 from PyQt5.QtGui import QPainter, QColor
 from PyQt5.uic import loadUi
 from PyQt5 import QtCore
@@ -16,6 +16,17 @@ class Window(QWidget):
         self.addButton.clicked.connect(self.addTask)
         self.deleteButton.clicked.connect(self.deleteTask)
         self.priorityComboBox.addItems(["High", "Medium", "Low"])
+        self.editButton.clicked.connect(self.editTask)
+
+        self.editButton.clicked.connect(self.editTask)
+        self.listWidget.itemSelectionChanged.connect(self.handleItemSelectionChanged)
+
+    def handleItemSelectionChanged(self):
+        # Enable or disable edit and delete buttons based on selection
+        selected_items = self.listWidget.selectedItems()
+        self.editButton.setEnabled(len(selected_items) == 1)
+        self.deleteButton.setEnabled(len(selected_items) == 1)
+        
 
 
     def calendarDateChanged(self):
@@ -115,21 +126,22 @@ class Window(QWidget):
         startTime = str(self.startTimeEdit.text())
         endTime = str(self.endTimeEdit.text())
 
-        for i in range(self.listWidget.count()):
-            item = self.listWidget.item(i)
-            task = item.text()
-            if item.checkState() == QtCore.Qt.Checked:
-                # Extract task, start time, and end time for deletion
-                task_parts = task.split(" - ")
-                task = task_parts[0]
-                startTime = task_parts[1]
-                endTime = task_parts[2]
+        selected_items = self.listWidget.selectedItems()
+        if not selected_items:
+            return
 
-                query = "DELETE FROM planner WHERE task = ? AND date = ? AND startTime = ? AND endTime = ?"
-                row = (task, date, startTime, endTime)
+        # Assuming only one item is selected
+        selected_item = selected_items[0]
+        task_details = selected_item.text().split(" - ")
 
-                cursor.execute(query, row)
-                print("Task Deleted")
+        # Extracting task details
+        task, date, startTime, endTime = task_details[0], date, task_details[1], task_details[2]
+
+        query = "DELETE FROM planner WHERE task = ? AND date = ? AND startTime = ? AND endTime = ?"
+        row = (task, date, startTime, endTime)
+
+        cursor.execute(query, row)
+        print("Task Deleted")
 
         conn.commit()
         print("Changes Saved")
@@ -140,6 +152,49 @@ class Window(QWidget):
         messageBox.exec()
 
         self.updateList(self.calendarWidget.selectedDate().toPyDate())
+
+
+    def editTask(self):
+
+        selected_items = self.listWidget.selectedItems()
+        if not selected_items:
+            return
+
+        # Assuming only one item is selected
+        selected_item = selected_items[0]
+        task_details = selected_item.text().split(" - ")
+
+        # Extracting task details
+        task_name, start_time, end_time = task_details[0], task_details[1], task_details[2]
+
+        # Ask user for new details
+        new_task_name, ok = QInputDialog.getText(self, "Edit Task", "Enter new task name:", text=task_name)
+        if not ok:
+            return
+
+        new_start_time, ok = QInputDialog.getText(self, "Edit Task", "Enter new start time:", text=start_time)
+        if not ok:
+            return
+
+        new_end_time, ok = QInputDialog.getText(self, "Edit Task", "Enter new end time:", text=end_time)
+        if not ok:
+            return
+
+        # Update the database
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+
+        date = self.calendarWidget.selectedDate().toPyDate()
+
+        query = "UPDATE planner SET task = ?, startTime = ?, endTime = ? WHERE task = ? AND date = ? AND startTime = ? AND endTime = ?"
+        row = (new_task_name, new_start_time, new_end_time, task_name, date, start_time, end_time)
+
+        cursor.execute(query, row)
+        conn.commit()
+
+        # Update the list widget
+        self.updateList(date)
+        
 
 
 if __name__ == "__main__":
