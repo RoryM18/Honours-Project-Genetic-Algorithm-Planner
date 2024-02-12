@@ -17,9 +17,9 @@ class Window(QWidget):
         self.deleteButton.clicked.connect(self.deleteTask)
         self.priorityComboBox.addItems(["High", "Medium", "Low"])
         self.editButton.clicked.connect(self.editTask)
-
         self.editButton.clicked.connect(self.editTask)
         self.listWidget.itemSelectionChanged.connect(self.handleItemSelectionChanged)
+        self.clearButton.clicked.connect(self.clearPlanner)
 
     def handleItemSelectionChanged(self):
         # Enable or disable edit and delete buttons based on selection
@@ -36,14 +36,19 @@ class Window(QWidget):
         self.updateList(dateSelected)
 
 
-    def updateList(self, date):
+    def updateList(self, date=None):
         self.listWidget.clear()
 
         conn = sqlite3.connect('data.db')
         cursor = conn.cursor()
 
-        query = "SELECT task, completed, startTime, endTime, priority FROM planner WHERE date = ?"
-        row = (date,)
+        if date is not None:
+            query = "SELECT task, completed, startTime, endTime, priority FROM planner WHERE date = ?"
+            row = (date,)
+        else:
+            query = "SELECT task, completed, startTime, endTime, priority FROM planner"
+            row = ()
+            
         results = cursor.execute(query, row).fetchall()
 
         priority_mapping = {1: "Low", 2: "Medium", 3: "High"}
@@ -194,7 +199,25 @@ class Window(QWidget):
 
         # Update the list widget
         self.updateList(date)
-        
+    
+
+    def clearPlanner(self):
+        reply = QMessageBox.question(self, 'Message', 'Are you sure you want to clear the planner?', QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+        if reply == QMessageBox.Yes:
+            conn = sqlite3.connect('data.db')
+            cursor = conn.cursor()
+
+            query = "DELETE FROM planner"
+            cursor.execute(query)
+            conn.commit()
+
+            self.updateList()
+
+            messageBox = QMessageBox()
+            messageBox.setText("Planner has been cleared")
+            messageBox.setStandardButtons(QMessageBox.Ok)
+            messageBox.exec()
 
 
 if __name__ == "__main__":
