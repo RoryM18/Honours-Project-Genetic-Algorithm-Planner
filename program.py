@@ -4,7 +4,23 @@ from PyQt5.uic import loadUi
 from PyQt5 import QtCore
 import sys
 import sqlite3
+import datetime as dateTime
+from geneticAlgorithm import geneticAlgorithm
 
+
+def getAllDates(year):
+        startDate = dateTime.date(year, 1, 1)
+        endDate = dateTime.date(year, 12, 31)
+        delta = dateTime.timedelta(days=1)
+
+        allDates = []
+
+        currentDate = startDate
+        while currentDate <= endDate:
+            allDates.append(currentDate)
+            currentDate += delta
+
+        return allDates
 
 class Window(QWidget):
     def __init__(self):
@@ -15,11 +31,38 @@ class Window(QWidget):
         self.saveButton.clicked.connect(self.saveChanges)
         self.addButton.clicked.connect(self.addTask)
         self.deleteButton.clicked.connect(self.deleteTask)
-        self.priorityComboBox.addItems(["High", "Medium", "Low"])
+        self.priorityComboBox.addItems(["One-time event", "Occasional event", "Regular Event", "Everyday Event"])
         self.editButton.clicked.connect(self.editTask)
         self.editButton.clicked.connect(self.editTask)
         self.listWidget.itemSelectionChanged.connect(self.handleItemSelectionChanged)
         self.clearButton.clicked.connect(self.clearPlanner)
+        self.optimiseButton.clicked.connect(self.optimiseSchedule)
+
+    
+    def optimiseSchedule(self):
+        optimiseSchedule = geneticAlgorithm()
+        yearToUpdate = self.calendarWidget.selectedDate().year()
+        selected_dates = getAllDates(yearToUpdate)
+        self.updatePlannerWithSchedule(optimiseSchedule, selected_dates)
+
+    
+
+    def updatePlannerWithSchedule(self, schedule, dates):
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+
+        # Clear existing tasks for the selected dates
+        for date in dates:
+            cursor.execute("DELETE FROM planner WHERE date = ?", (date,))
+
+            # Insert the optimized schedule into the planner for each date
+            for task in schedule:
+                query = "INSERT INTO planner (task, completed, date, startTime, endTime, priority) VALUES (?, ?, ?, ?, ?, ?)"
+                row = (task.get('task_name', ''), "NO", date, task.get('start_time', ''), task.get('end_time', ''), task.get('priority', ''))
+                cursor.execute(query, row)
+
+        conn.commit()
+        
 
     def handleItemSelectionChanged(self):
         # Enable or disable edit and delete buttons based on selection
@@ -27,7 +70,6 @@ class Window(QWidget):
         self.editButton.setEnabled(len(selected_items) == 1)
         self.deleteButton.setEnabled(len(selected_items) == 1)
         
-
 
     def calendarDateChanged(self):
         print("The Calendar Date has been changed")
@@ -48,10 +90,10 @@ class Window(QWidget):
         else:
             query = "SELECT task, completed, startTime, endTime, priority FROM planner"
             row = ()
-            
+
         results = cursor.execute(query, row).fetchall()
 
-        priority_mapping = {1: "Low", 2: "Medium", 3: "High"}
+        priority_mapping = {1: "One-time event", 2: "Occasional event", 3: "Regular Event", 4: "Everyday Event"}
 
         for result in results:
             task = result[0]
@@ -108,7 +150,7 @@ class Window(QWidget):
         newEndTime = str(self.endTimeEdit.text())
 
         # Map priority values based on ComboBox selection
-        priorityMapping = {"High": 3, "Medium": 2, "Low": 1}
+        priorityMapping = {"One-time event": 1, "Occasional event": 2, "Regular Event": 3, "Everyday Event": 4}
         priority = priorityMapping.get(self.priorityComboBox.currentText(), 0)
 
         query = "INSERT INTO planner (task, completed, date, startTime, endTime, priority) VALUES (?, ?, ?, ?, ?, ?)"
