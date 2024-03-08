@@ -1,26 +1,29 @@
-from PyQt5.QtWidgets import QWidget, QApplication, QListWidgetItem, QMessageBox, QInputDialog, QTimeEdit
+from PyQt5.QtWidgets import QWidget, QApplication, QListWidgetItem, QMessageBox, QInputDialog, QTimeEdit, QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QDialogButtonBox
 from PyQt5.QtGui import QPainter, QColor
 from PyQt5.uic import loadUi
 from PyQt5 import QtCore
 import sys
 import sqlite3
 import datetime as dateTime
+import calendar
 from geneticAlgorithm import geneticAlgorithm
 
 
-def getAllDates(year):
-        startDate = dateTime.date(year, 1, 1)
-        endDate = dateTime.date(year, 12, 31)
-        delta = dateTime.timedelta(days=1)
+def getAllDates(year, month):
+    startDate = dateTime.date(year, month, 1)
+    # Calculate the last day of the month
+    last_day = calendar.monthrange(year, month)[1]
+    endDate = dateTime.date(year, month, last_day)
+    delta = dateTime.timedelta(days=1)
 
-        allDates = []
+    allDates = []
 
-        currentDate = startDate
-        while currentDate <= endDate:
-            allDates.append(currentDate)
-            currentDate += delta
+    currentDate = startDate
+    while currentDate <= endDate:
+        allDates.append(currentDate)
+        currentDate += delta
 
-        return allDates
+    return allDates
 
 class Window(QWidget):
     def __init__(self):
@@ -38,11 +41,13 @@ class Window(QWidget):
         self.clearButton.clicked.connect(self.clearPlanner)
         self.optimiseButton.clicked.connect(self.optimiseSchedule)
 
-    
+
     def optimiseSchedule(self):
         optimiseSchedule = geneticAlgorithm()
-        yearToUpdate = self.calendarWidget.selectedDate().year()
-        selected_dates = getAllDates(yearToUpdate)
+        selected_date = self.calendarWidget.selectedDate()
+        year_to_update = selected_date.year()
+        month_to_update = selected_date.month()
+        selected_dates = getAllDates(year_to_update, month_to_update)
         self.updatePlannerWithSchedule(optimiseSchedule, selected_dates)
 
     
