@@ -43,12 +43,29 @@ class Window(QWidget):
 
 
     def optimiseSchedule(self):
-        optimiseSchedule = geneticAlgorithm()
-        selected_date = self.calendarWidget.selectedDate()
-        year_to_update = selected_date.year()
-        month_to_update = selected_date.month()
-        selected_dates = getAllDates(year_to_update, month_to_update)
-        self.updatePlannerWithSchedule(optimiseSchedule, selected_dates)
+        selected_date = self.calendarWidget.selectedDate().toPyDate()
+
+        # Fetch tasks from SQLite for the specific date
+        conn = sqlite3.connect('data.db')
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM planner WHERE date = ?", (selected_date,))
+        task_data = cursor.fetchall()
+        conn.close()
+
+        tasks = [{'task_name': row[1], 'date': row[3], 'start_time': row[4], 'end_time': row[5], 'priority': row[6]} for row in task_data]
+
+        print(f"Optimizing schedule for date: {selected_date}")
+
+        # Run genetic algorithm for the specific date
+        optimise_schedule = geneticAlgorithm(tasks)
+
+        print(f"Optimized schedule for date {selected_date}: {optimise_schedule}")
+
+        # Update the planner with the optimized schedule for the specific date
+        self.updatePlannerWithSchedule(optimise_schedule, [selected_date])
+
+        # Update the list widget with the tasks for the currently selected date
+        self.updateList(selected_date)
 
     
 

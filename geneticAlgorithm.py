@@ -32,7 +32,7 @@ populationSize = 100
 mutationRate = 0.01
 numGenerations = 10000
 tournamentSize = 3
-convergenceThreshold = 0.001  # Adjust as needed
+convergenceThreshold = 0.01  # Adjust as needed
 
 
 # Function to initialize a random schedule
@@ -67,12 +67,9 @@ def evaluateSchedule(schedule):
             other_start_time = other_task['start_time']
             other_end_time = other_task['end_time']
 
-            if date == other_task['date'] and not (end_time <= other_start_time or start_time >= other_end_time):
-                fitness += 0.5  # Penalize for overlapping tasks
-
-        # Constraint 4: Time Windows
-        if not (start_time <= end_time):  # Adjust as needed
-            fitness += 0.5  # Penalize schedules that violate time windows
+            if date == other_task['date']:
+                if not (end_time <= other_start_time or start_time >= other_end_time):
+                    fitness += 0.5  # Penalize for overlapping tasks
 
         # Constraint 5: Minimum Break Duration
         if i > 0:
@@ -134,6 +131,20 @@ def crossover(schedule1, schedule2):
     #print(f"The Child schedules: ", child1, child2)
     return child1, child2
 
+def uniform_crossover(schedule1, schedule2):
+    child1 = []
+    child2 = []
+
+    for gene1, gene2 in zip(schedule1, schedule2):
+        if random.choice([True, False]):
+            child1.append(gene1)
+            child2.append(gene2)
+        else:
+            child1.append(gene2)
+            child2.append(gene1)
+
+    return child1, child2
+
 
 def mutate(schedule):
     for task in schedule:
@@ -192,53 +203,66 @@ def displayScheduleTable(schedule):
 
     print(table)
 
+
 # Function to perform the genetic algorithm
-def geneticAlgorithm():
+def geneticAlgorithm(tasks):
     # Step 1: Initialise the population
     population = initialiseSchedule(tasks, populationSize)
 
-    previousBestFitness = float('inf')  # Initialize with a large value
+    def best_fitness(population):
+        return max(population, key=evaluateSchedule)
+
+    def replace(population, children):
+        # Combine the population and children, and select the best individual
+        combined_population = population + children
+        fitness_scores = [evaluateSchedule(schedule) for schedule in combined_population]
+        sorted_population = [x for _, x in sorted(zip(fitness_scores, combined_population), key=lambda pair: pair[0], reverse=True)]
+
+        return sorted_population[:populationSize]
+
+    previous_best_fitness = float('inf')  # Initialize with a large value
     for generation in range(numGenerations):
         # Step 2: Evaluate fitness
-        fitnessScores = [evaluateSchedule(schedule) for schedule in population]
+        fitness_scores = [evaluateSchedule(schedule) for schedule in population]
 
-        # Step 3: Selection 
-        selectedParents = rouletteWheelSelection(population, fitnessScores)
+        # Step 3: Selection
+        selected_parents = rouletteWheelSelection(population, fitness_scores)
 
         # Step 4: Crossover
         children = []
-        for i in range(0, len(selectedParents), 2):
-            parent1 = selectedParents[i]
-            parent2 = selectedParents[i + 1]
-            child1, child2 = crossover(parent1, parent2)
+        for i in range(0, len(selected_parents), 2):
+            parent1 = selected_parents[i]
+            parent2 = selected_parents[i + 1]
+            child1, child2 = uniform_crossover(parent1, parent2)
             children.extend([child1, child2])
 
         # Step 5: Mutation
         for child in children:
             mutate(child)
 
-        # Step 6: Create Next generation 
-        population = selectNextGeneration(population + children, fitnessScores)
+        # Step 6: Create Next generation
+        population = selectNextGeneration(population + children, fitness_scores)
+        replace(population, children)
 
         # Return the best schedule from the final population
-        bestSchedule = max(population, key=evaluateSchedule)
-        bestFitness = evaluateSchedule(bestSchedule)
+        best_schedule = max(population, key=evaluateSchedule)
+        best_fitness = evaluateSchedule(best_schedule)
 
         # Print current best fitness for monitoring
-        print(f"Generation {generation + 1}: Best Fitness - {bestFitness}")
+        print(f"Generation {generation + 1}: Best Fitness - {best_fitness}")
 
         # Check for convergence
-        if previousBestFitness <= convergenceThreshold:
+        if previous_best_fitness <= convergenceThreshold:
             print(f"Converged at generation {generation + 1}")
             break
 
-        previousBestFitness = bestFitness
+        previous_best_fitness = best_fitness
 
     # Print the best schedule in table format
     print("Best Schedule:")
-    displayScheduleTable(bestSchedule)
+    displayScheduleTable(best_schedule)
 
-    return bestSchedule
+    return best_schedule
 
 # Using the genetic algorithm with the test data
 #test_population_size = 10  # Adjust as needed
