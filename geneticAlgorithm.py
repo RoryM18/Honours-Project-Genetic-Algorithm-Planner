@@ -28,12 +28,17 @@ test_tasks = [
 
 #Define genetic algorithm parameters 
 
-populationSize = 100
+########## Genetic Algorithm Parameters ##########
+
+populationSize = 40
 mutationRate = 0.01
-numGenerations = 10000
-tournamentSize = 3
+numGenerations = 5000
+tournamentSize = 10
 convergenceThreshold = 0.01  # Adjust as needed
 
+##################################################
+
+########## Genetic Algorithm Initalisation ##########
 
 # Function to initialize a random schedule
 def initialize_test_schedule(tasks, population_size):
@@ -52,9 +57,14 @@ def initialiseSchedule(tasks, populationSize):
          population.append(shuffledTasks)
     return population
 
+##################################################
+
+
+########## Genetic Algorithm Evaluation Operator ##########
+
 # Function to evaluate fitness of a schedule
 def evaluateSchedule(schedule):
-    fitness = 1
+    fitness = 0
 
     for i, task in enumerate(schedule):
         priority = task['priority']
@@ -62,35 +72,33 @@ def evaluateSchedule(schedule):
         start_time = task['start_time']
         end_time = task['end_time']
 
-        # Constraint 2: Avoid overlapping tasks
+        # Constraint 1: Avoid overlapping tasks
         for other_task in schedule[i + 1:]:
             other_start_time = other_task['start_time']
             other_end_time = other_task['end_time']
 
             if date == other_task['date']:
                 if not (end_time <= other_start_time or start_time >= other_end_time):
-                    fitness += 0.5  # Penalize for overlapping tasks
+                    fitness += 0.1  # Penalize for overlapping tasks
+                else:
+                    fitness -= 0.01 # award for non-overlapping tasks
 
-        # Constraint 5: Minimum Break Duration
+        # Constraint 2: Minimum Break Duration
         if i > 0:
             prev_end_time = datetime.datetime.strptime(schedule[i - 1]['end_time'], "%H:%M")
             current_start_time = datetime.datetime.strptime(start_time, "%H:%M")
             break_duration = (current_start_time - prev_end_time).total_seconds() / 60
             min_break_duration = 15  # Minimum break duration in minutes
             if break_duration < min_break_duration:
-                fitness += 0.5  # Penalize for insufficient break duration
-
-        # Add fitness based on task priorities
-        if priority == 1:
-            fitness -= 0.1
-        elif priority == 2:
-            fitness -= 0.2
-        elif priority == 3:
-            fitness -= 0.3
-        elif priority == 4:
-            fitness -= 0.4
+                fitness += 0.1  # Penalize for insufficient break duration
+            else:
+                fitness -= 0.01  # Award for approtiate break duration
 
     return fitness
+
+##################################################
+
+########## Genetic Algorithm Selection Operators ##########
 
 # Function to select parents using tournament selection
 def tournamentSelection(population, fitnessScores, tournamentSize):
@@ -118,17 +126,44 @@ def rouletteWheelSelection(population, fitnessScores):
 
     return selectedParents
 
+def rankBasedSelection(population, fitnessScores):
+    sortedPopulation = [x for _, x in sorted(zip(fitnessScores, population), key=lambda pair: pair[0], reverse=True)]
+    selectionProbabilities = [((2 * (i + 1)) / (len(population) * (len(population) + 1))) for i in range(len(population))]
+
+    selectedParents = []
+    for _ in range(len(population)):
+        spin = random.uniform(0, 1)
+        cumulativeProbability = 0
+
+        for i, probability in enumerate(selectionProbabilities):
+            cumulativeProbability += probability
+            if spin <= cumulativeProbability:
+                selectedParents.append(sortedPopulation[i])
+                break
+
+    return selectedParents
+
 # Function to select the next generation of schedules based on fitness scores
 def selectNextGeneration(population, fitnessScores):
     sortedPopulation = [x for _, x in sorted(zip(fitnessScores, population), key=lambda pair: pair[0], reverse=True)]
     return sortedPopulation[:populationSize]
 
+##################################################
+
+
+########## Genetic Algorithm Crossover Operators ##########
+
 # Function to perform crossover between two parent schedules
-def crossover(schedule1, schedule2):
+def onePointcrossover(schedule1, schedule2):
     crossoverPoint = random.randint(0, min(len(schedule1), len(schedule2)))
     child1 = schedule1[:crossoverPoint] + schedule2[crossoverPoint:]
     child2 = schedule2[:crossoverPoint] + schedule1[crossoverPoint:]
-    #print(f"The Child schedules: ", child1, child2)
+    return child1, child2
+
+def twoPointcrossover(schedule1, schedule2):
+    crossoverPoints = sorted(random.sample(range(min(len(schedule1)), len(schedule2)), k=2))
+    child1 = schedule1[:crossoverPoints[0]] + schedule2[crossoverPoints[0]:crossoverPoints[1]] + schedule1[crossoverPoints[1]:]
+    child2 = schedule2[:crossoverPoints[0]] + schedule1[crossoverPoints[0]:crossoverPoints[1]] + schedule2[crossoverPoints[1]:]
     return child1, child2
 
 def uniform_crossover(schedule1, schedule2):
@@ -145,9 +180,18 @@ def uniform_crossover(schedule1, schedule2):
 
     return child1, child2
 
+##################################################
+
+
+########## Genetic Algorithm Mutation Operator ##########
 
 def mutate(schedule):
     for task in schedule:
+
+        #Check if task has priority level 4
+        if task['priority'] == 4:
+            continue
+
         if random.uniform(0, 1) < mutationRate:
             task['start_time'], task['end_time'] = mutate_time(task['start_time'], task['end_time'], schedule)
         else:
@@ -193,7 +237,10 @@ def task_overlap(start_time, end_time, task):
     task_end_time = datetime.datetime.strptime(task['end_time'], "%H:%M")
     return not (end_time <= task_start_time or start_time >= task_end_time)
 
-# Function to display schedule in table format
+
+##################################################
+
+# Function to display schedule in table format in the command Line Interface
 def displayScheduleTable(schedule):
     table = prettytable.PrettyTable()
     table.field_names = ['Task Name', 'Date', 'Start Time', 'End Time', 'Priority']
@@ -203,6 +250,8 @@ def displayScheduleTable(schedule):
 
     print(table)
 
+
+########## Genetic Algorithm Main Function ##########
 
 # Function to perform the genetic algorithm
 def geneticAlgorithm(tasks):
@@ -226,7 +275,7 @@ def geneticAlgorithm(tasks):
         fitness_scores = [evaluateSchedule(schedule) for schedule in population]
 
         # Step 3: Selection
-        selected_parents = rouletteWheelSelection(population, fitness_scores)
+        selected_parents = tournamentSelection(population, fitness_scores, tournamentSize)
 
         # Step 4: Crossover
         children = []
@@ -252,7 +301,7 @@ def geneticAlgorithm(tasks):
         print(f"Generation {generation + 1}: Best Fitness - {best_fitness}")
 
         # Check for convergence
-        if previous_best_fitness <= convergenceThreshold:
+        if previous_best_fitness == convergenceThreshold:
             print(f"Converged at generation {generation + 1}")
             break
 
@@ -263,6 +312,8 @@ def geneticAlgorithm(tasks):
     displayScheduleTable(best_schedule)
 
     return best_schedule
+
+##################################################
 
 # Using the genetic algorithm with the test data
 #test_population_size = 10  # Adjust as needed
