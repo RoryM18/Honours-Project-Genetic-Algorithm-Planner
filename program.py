@@ -1,7 +1,7 @@
-from PyQt5.QtWidgets import QWidget, QApplication, QListWidgetItem, QMessageBox, QInputDialog, QTimeEdit, QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QDialogButtonBox
-from PyQt5.QtGui import QPainter, QColor
+from PyQt5.QtWidgets import QWidget, QApplication, QListWidgetItem, QMessageBox, QInputDialog, QProgressBar, QVBoxLayout
 from PyQt5.uic import loadUi
 from PyQt5 import QtCore
+from PyQt5.QtCore import Qt, QTimer
 import sys
 import sqlite3
 import datetime as dateTime
@@ -41,8 +41,36 @@ class Window(QWidget):
         self.clearButton.clicked.connect(self.clearPlanner)
         self.optimiseButton.clicked.connect(self.optimiseSchedule)
 
+        #Layout Setup
+        self.progressBar = None
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+
+
+    def showProgressBar(self):
+        #Create and customise progress bar
+        self.progressBar = QProgressBar()
+        self.progressBar.setRange(0, 100)
+        self.progressBar.setValue(0)
+
+        #Add progress bar to layout and show it 
+        self.layout.addWidget(self.progressBar)
+        self.progressBar.show()
+
+    def hideProgressBar(self):
+        if self.progressBar:
+            self.progressBar.hide()
+            self.layout.removeWidget(self.progressBar)
+            self.progressBar.deleteLater()  # Remove progress bar from memory
+            self.progressBar = None  # Reset progress bar variable
+    
+    def updateProgressBar(self, value):
+        self.progressBar.setValue(int(value))
 
     def optimiseSchedule(self):
+        # Show progress bar
+        self.showProgressBar()
+
         selected_date = self.calendarWidget.selectedDate().toPyDate()
 
         # Fetch tasks from SQLite for the specific date
@@ -57,7 +85,7 @@ class Window(QWidget):
         print(f"Optimizing schedule for date: {selected_date}")
 
         # Run genetic algorithm for the specific date
-        optimise_schedule = geneticAlgorithm(tasks)
+        optimise_schedule = geneticAlgorithm(tasks, progressCallback=self.updateProgressBar)
 
         print(f"Optimized schedule for date {selected_date}: {optimise_schedule}")
 
@@ -66,6 +94,9 @@ class Window(QWidget):
 
         # Update the list widget with the tasks for the currently selected date
         self.updateList(selected_date)
+
+        # Hide progress bar
+        self.hideProgressBar()
 
     
 

@@ -34,7 +34,7 @@ populationSize = 40
 mutationRate = 0.01
 numGenerations = 5000
 tournamentSize = 10
-convergenceThreshold = 0.01  # Adjust as needed
+convergenceThreshold = 0.01
 
 ##################################################
 
@@ -93,7 +93,6 @@ def evaluateSchedule(schedule):
                 fitness += 0.1  # Penalize for insufficient break duration
             else:
                 fitness -= 0.01  # Award for approtiate break duration
-
     return fitness
 
 ##################################################
@@ -161,7 +160,7 @@ def onePointcrossover(schedule1, schedule2):
     return child1, child2
 
 def twoPointcrossover(schedule1, schedule2):
-    crossoverPoints = sorted(random.sample(range(min(len(schedule1)), len(schedule2)), k=2))
+    crossoverPoints = sorted(random.sample(range(min(len(schedule1), len(schedule2))), 2))
     child1 = schedule1[:crossoverPoints[0]] + schedule2[crossoverPoints[0]:crossoverPoints[1]] + schedule1[crossoverPoints[1]:]
     child2 = schedule2[:crossoverPoints[0]] + schedule1[crossoverPoints[0]:crossoverPoints[1]] + schedule2[crossoverPoints[1]:]
     return child1, child2
@@ -254,7 +253,8 @@ def displayScheduleTable(schedule):
 ########## Genetic Algorithm Main Function ##########
 
 # Function to perform the genetic algorithm
-def geneticAlgorithm(tasks):
+def geneticAlgorithm(tasks, progressCallback=None):
+
     # Step 1: Initialise the population
     population = initialiseSchedule(tasks, populationSize)
 
@@ -271,6 +271,10 @@ def geneticAlgorithm(tasks):
 
     previous_best_fitness = float('inf')  # Initialize with a large value
     for generation in range(numGenerations):
+
+        if progressCallback:
+            progressCallback((generation + 1) * 100 / numGenerations)
+
         # Step 2: Evaluate fitness
         fitness_scores = [evaluateSchedule(schedule) for schedule in population]
 
@@ -282,7 +286,7 @@ def geneticAlgorithm(tasks):
         for i in range(0, len(selected_parents), 2):
             parent1 = selected_parents[i]
             parent2 = selected_parents[i + 1]
-            child1, child2 = uniform_crossover(parent1, parent2)
+            child1, child2 = twoPointcrossover(parent1, parent2)
             children.extend([child1, child2])
 
         # Step 5: Mutation
