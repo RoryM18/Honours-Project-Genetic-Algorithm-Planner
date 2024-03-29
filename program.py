@@ -1,3 +1,4 @@
+#Importing necessary PyQt5 and SQLite3 Modules
 from PyQt5.QtWidgets import QWidget, QApplication, QListWidgetItem, QMessageBox, QInputDialog, QProgressBar, QVBoxLayout
 from PyQt5.uic import loadUi
 from PyQt5 import QtCore
@@ -6,14 +7,26 @@ import sys
 import sqlite3
 import datetime as dateTime
 import calendar
-from geneticAlgorithm import geneticAlgorithm
+from geneticAlgorithm import geneticAlgorithm #Genetic algorithm function
 
 
+#Function to get all dates within planner application 
 def getAllDates(year, month):
+    """
+    Get all dates for a given year and month
+
+    Args: 
+    year (int): Year
+    month (int): Month
+
+    Returns:
+    list: List of all dates for the given year and month.
+    """
+
     startDate = dateTime.date(year, month, 1)
     # Calculate the last day of the month
-    last_day = calendar.monthrange(year, month)[1]
-    endDate = dateTime.date(year, month, last_day)
+    lastDay = calendar.monthrange(year, month)[1]
+    endDate = dateTime.date(year, month, lastDay)
     delta = dateTime.timedelta(days=1)
 
     allDates = []
@@ -25,10 +38,13 @@ def getAllDates(year, month):
 
     return allDates
 
+
+#Class that initalises the main window of the planner application
 class Window(QWidget):
     def __init__(self):
         super(Window, self).__init__()
         loadUi("main.ui", self)
+        #Button and planner functionality
         self.calendarWidget.selectionChanged.connect(self.calendarDateChanged)
         self.calendarDateChanged()
         self.saveButton.clicked.connect(self.saveChanges)
@@ -67,39 +83,40 @@ class Window(QWidget):
     def updateProgressBar(self, value):
         self.progressBar.setValue(int(value))
 
+    #Function to optimise the schedule using the genetic algorithm
     def optimiseSchedule(self):
         # Show progress bar
         self.showProgressBar()
 
-        selected_date = self.calendarWidget.selectedDate().toPyDate()
+        selectedDate = self.calendarWidget.selectedDate().toPyDate()
 
         # Fetch tasks from SQLite for the specific date
         conn = sqlite3.connect('data.db')
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM planner WHERE date = ?", (selected_date,))
-        task_data = cursor.fetchall()
+        cursor.execute("SELECT * FROM planner WHERE date = ?", (selectedDate,))
+        taskData = cursor.fetchall()
         conn.close()
 
-        tasks = [{'task_name': row[1], 'date': row[3], 'start_time': row[4], 'end_time': row[5], 'priority': row[6]} for row in task_data]
+        tasks = [{'task_name': row[1], 'date': row[3], 'start_time': row[4], 'end_time': row[5], 'priority': row[6]} for row in taskData]
 
-        print(f"Optimizing schedule for date: {selected_date}")
+        print(f"Optimizing schedule for date: {selectedDate}")
 
         # Run genetic algorithm for the specific date
-        optimise_schedule = geneticAlgorithm(tasks, progressCallback=self.updateProgressBar)
+        optimiseSchedule = geneticAlgorithm(tasks, progressCallback=self.updateProgressBar)
 
-        print(f"Optimized schedule for date {selected_date}: {optimise_schedule}")
+        print(f"Optimized schedule for date {selectedDate}: {optimiseSchedule}")
 
         # Update the planner with the optimized schedule for the specific date
-        self.updatePlannerWithSchedule(optimise_schedule, [selected_date])
+        self.updatePlannerWithSchedule(optimiseSchedule, [selectedDate])
 
         # Update the list widget with the tasks for the currently selected date
-        self.updateList(selected_date)
+        self.updateList(selectedDate)
 
         # Hide progress bar
         self.hideProgressBar()
 
     
-
+    #Function to update the planner with the optimised schedule
     def updatePlannerWithSchedule(self, schedule, dates):
         conn = sqlite3.connect('data.db')
         cursor = conn.cursor()
@@ -119,9 +136,9 @@ class Window(QWidget):
 
     def handleItemSelectionChanged(self):
         # Enable or disable edit and delete buttons based on selection
-        selected_items = self.listWidget.selectedItems()
-        self.editButton.setEnabled(len(selected_items) == 1)
-        self.deleteButton.setEnabled(len(selected_items) == 1)
+        selectedItems = self.listWidget.selectedItems()
+        self.editButton.setEnabled(len(selectedItems) == 1)
+        self.deleteButton.setEnabled(len(selectedItems) == 1)
         
 
     def calendarDateChanged(self):
@@ -131,6 +148,7 @@ class Window(QWidget):
         self.updateList(dateSelected)
 
 
+    #Function to update the list of tasks in the planner
     def updateList(self, date=None):
         self.listWidget.clear()
 
@@ -148,6 +166,7 @@ class Window(QWidget):
 
         priority_mapping = {1: "One-time event", 2: "Occasional event", 3: "Regular Event", 4: "Everyday Event"}
 
+        # Add tasks to the list widget
         for result in results:
             task = result[0]
             completed = result[1]
@@ -256,31 +275,31 @@ class Window(QWidget):
 
     def editTask(self):
 
-        selected_items = self.listWidget.selectedItems()
-        if not selected_items:
+        selectedItems = self.listWidget.selectedItems()
+        if not selectedItems:
             return
 
         # Assuming only one item is selected
-        selected_item = selected_items[0]
-        task_details = selected_item.text().split(" - ")
+        selectedItems = selectedItems[0]
+        taskDetails = selectedItems.text().split(" - ")
 
         # Extracting task details
-        task_name, start_time, end_time, priority = task_details[0], task_details[1], task_details[2], task_details[3].strip()
+        taskName, startTime, endTime, priority = taskDetails[0], taskDetails[1], taskDetails[2], taskDetails[3].strip()
 
         # Ask user for new details
-        new_task_name, ok = QInputDialog.getText(self, "Edit Task", "Enter new task name:", text=task_name)
+        newTaskName, ok = QInputDialog.getText(self, "Edit Task", "Enter new task name:", text=taskName)
         if not ok:
             return
 
-        new_start_time, ok = QInputDialog.getText(self, "Edit Task", "Enter new start time:", text=start_time)
+        newStartTime, ok = QInputDialog.getText(self, "Edit Task", "Enter new start time:", text=startTime)
         if not ok:
             return
 
-        new_end_time, ok = QInputDialog.getText(self, "Edit Task", "Enter new end time:", text=end_time)
+        newEndTime, ok = QInputDialog.getText(self, "Edit Task", "Enter new end time:", text=endTime)
         if not ok:
             return
         
-        new_priority, ok = QInputDialog.getItem(self, "Edit Task", "Select new priority:", ["One-time event", "Occasional event", "Regular Event", "Everyday Event"], 0, False)
+        newPriority, ok = QInputDialog.getItem(self, "Edit Task", "Select new priority:", ["One-time event", "Occasional event", "Regular Event", "Everyday Event"], 0, False)
         if not ok:
             return
 
@@ -291,7 +310,7 @@ class Window(QWidget):
         date = self.calendarWidget.selectedDate().toPyDate()
 
         query = "UPDATE planner SET task = ?, startTime = ?, endTime = ?, priority = ? WHERE task = ? AND date = ? AND startTime = ? AND endTime = ? AND priority = ?"
-        row = (new_task_name, new_start_time, new_end_time, new_priority, task_name, date, start_time, end_time, priority)
+        row = (newTaskName, newStartTime, newEndTime, newPriority, taskName, date, startTime, endTime, priority)
 
         cursor.execute(query, row)
         conn.commit()

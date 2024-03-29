@@ -13,19 +13,6 @@ con.close()
 tasks = [{'task_name': row[1], 'date': row[3], 'start_time': row[4], 'end_time': row[5], 'priority': row[6]} for row in task]
 
 
-# Test Data
-test_tasks = [
-    {'task_name': 'Work', 'date': '2024-02-26', 'start_time': '09:00', 'end_time': '10:30', 'priority': 1},
-    {'task_name': 'Gym', 'date': '2024-02-26', 'start_time': '11:00', 'end_time': '12:30', 'priority': 2},
-    {'task_name': 'Reading', 'date': '2024-02-26', 'start_time': '14:00', 'end_time': '15:30', 'priority': 3},
-    {'task_name': 'Studying', 'date': '2024-02-26', 'start_time': '16:00', 'end_time': '17:30', 'priority': 4},
-    {'task_name': 'Gym', 'date': '2024-02-27', 'start_time': '10:00', 'end_time': '11:30', 'priority': 1},
-    {'task_name': 'Studying', 'date': '2024-02-27', 'start_time': '12:00', 'end_time': '13:30', 'priority': 2},
-    {'task_name': 'Shopping', 'date': '2024-02-27', 'start_time': '15:00', 'end_time': '16:30', 'priority': 3},
-    {'task_name': 'Reading', 'date': '2024-02-27', 'start_time': '17:00', 'end_time': '18:30', 'priority': 4},
-    # Add more tasks as needed
-]
-
 #Define genetic algorithm parameters 
 
 ########## Genetic Algorithm Parameters ##########
@@ -40,17 +27,10 @@ convergenceThreshold = 0.01
 
 ########## Genetic Algorithm Initalisation ##########
 
-# Function to initialize a random schedule
-def initialize_test_schedule(tasks, population_size):
-    test_population = []
-    for _ in range(population_size):
-        shuffled_tasks = random.sample(tasks, len(tasks))
-        test_population.append(shuffled_tasks)
-    return test_population
-
 # Function to initialise a random schedule 
 def initialiseSchedule(tasks, populationSize):
     population = []
+    # Create a population of schedules by shuffling the tasks
     for _ in range(populationSize):
          # Create a schedule by shuffling the tasks and ensuring priorities are respected
          shuffledTasks = random.sample(tasks, len(tasks))
@@ -69,27 +49,27 @@ def evaluateSchedule(schedule):
     for i, task in enumerate(schedule):
         priority = task['priority']
         date = task['date']
-        start_time = task['start_time']
-        end_time = task['end_time']
+        startTime = task['start_time']
+        endTime = task['end_time']
 
         # Constraint 1: Avoid overlapping tasks
-        for other_task in schedule[i + 1:]:
-            other_start_time = other_task['start_time']
-            other_end_time = other_task['end_time']
+        for otherTask in schedule[i + 1:]:
+            otherStartTime = otherTask['start_time']
+            otherEndTime = otherTask['end_time']
 
-            if date == other_task['date']:
-                if not (end_time <= other_start_time or start_time >= other_end_time):
+            if date == otherTask['date']:
+                if not (endTime <= otherStartTime or startTime >= otherEndTime):
                     fitness += 0.1  # Penalize for overlapping tasks
                 else:
                     fitness -= 0.01 # award for non-overlapping tasks
 
         # Constraint 2: Minimum Break Duration
         if i > 0:
-            prev_end_time = datetime.datetime.strptime(schedule[i - 1]['end_time'], "%H:%M")
-            current_start_time = datetime.datetime.strptime(start_time, "%H:%M")
-            break_duration = (current_start_time - prev_end_time).total_seconds() / 60
-            min_break_duration = 15  # Minimum break duration in minutes
-            if break_duration < min_break_duration:
+            prevEndTime = datetime.datetime.strptime(schedule[i - 1]['end_time'], "%H:%M")
+            currentStartTime = datetime.datetime.strptime(startTime, "%H:%M")
+            breakDuration = (currentStartTime - prevEndTime).total_seconds() / 60
+            minBreakDuration = 15  # Minimum break duration in minutes
+            if breakDuration < minBreakDuration:
                 fitness += 0.1  # Penalize for insufficient break duration
             else:
                 fitness -= 0.01  # Award for approtiate break duration
@@ -165,7 +145,7 @@ def twoPointcrossover(schedule1, schedule2):
     child2 = schedule2[:crossoverPoints[0]] + schedule1[crossoverPoints[0]:crossoverPoints[1]] + schedule2[crossoverPoints[1]:]
     return child1, child2
 
-def uniform_crossover(schedule1, schedule2):
+def uniformCrossover(schedule1, schedule2):
     child1 = []
     child2 = []
 
@@ -192,49 +172,49 @@ def mutate(schedule):
             continue
 
         if random.uniform(0, 1) < mutationRate:
-            task['start_time'], task['end_time'] = mutate_time(task['start_time'], task['end_time'], schedule)
+            task['start_time'], task['end_time'] = mutateTime(task['start_time'], task['end_time'], schedule)
         else:
             # Mutate end time
-            mutated_times = mutate_time(task['start_time'], task['end_time'], schedule)
-            task['start_time'], task['end_time'] = mutated_times
+            mutatedTimes = mutateTime(task['start_time'], task['end_time'], schedule)
+            task['start_time'], task['end_time'] = mutatedTimes
 
     return schedule
 
-def mutate_time(current_start_time, current_end_time, all_tasks):
-    time_format = "%H:%M"
+def mutateTime(currentStartTime, currentEndTime, allTasks):
+    timeFormat = "%H:%M"
 
     # Mutate time by adding or subtracting a random duration in multiples of 5 (e.g., 5, 10, 15 minutes)
-    mutation_minutes = random.randint(1, 24) * 5  # Random multiples of 5 up to 120 minutes
+    mutationMinutes = random.randint(1, 24) * 5  # Random multiples of 5 up to 120 minutes
 
     # Convert current times to datetime objects
-    start_time_obj = datetime.datetime.strptime(current_start_time, time_format)
-    end_time_obj = datetime.datetime.strptime(current_end_time, time_format)
+    startTimeObj = datetime.datetime.strptime(currentStartTime, timeFormat)
+    endTimeObj = datetime.datetime.strptime(currentEndTime, timeFormat)
 
     # Randomly choose whether to add or subtract time
     if random.choice([True, False]):
-        mutated_start_time = start_time_obj + datetime.timedelta(minutes=mutation_minutes)
-        mutated_end_time = end_time_obj + datetime.timedelta(minutes=mutation_minutes)
+        mutatedStartTime = startTimeObj + datetime.timedelta(minutes=mutationMinutes)
+        mutatedEndTime = endTimeObj + datetime.timedelta(minutes=mutationMinutes)
     else:
-        mutated_start_time = start_time_obj - datetime.timedelta(minutes=mutation_minutes)
-        mutated_end_time = end_time_obj - datetime.timedelta(minutes=mutation_minutes)
+        mutatedStartTime = startTimeObj - datetime.timedelta(minutes=mutationMinutes)
+        mutatedEndTime = endTimeObj - datetime.timedelta(minutes=mutationMinutes)
 
     # Round the mutated times to the nearest multiple of 5
-    mutated_start_time = round_time_to_multiple(mutated_start_time, 5)
-    mutated_end_time = round_time_to_multiple(mutated_end_time, 5)
+    mutatedStartTime = roundTimeToMultiple(mutatedStartTime, 5)
+    mutatedEndTime = roundTimeToMultiple(mutatedEndTime, 5)
 
-    return mutated_start_time.strftime(time_format), mutated_end_time.strftime(time_format)
+    return mutatedStartTime.strftime(timeFormat), mutatedEndTime.strftime(timeFormat)
 
-def round_time_to_multiple(time_obj, multiple):
-    rounded_minute = (time_obj.minute // multiple) * multiple
+def roundTimeToMultiple(timeObj, multiple):
+    roundedMinute = (timeObj.minute // multiple) * multiple
     return datetime.datetime(
-        time_obj.year, time_obj.month, time_obj.day,
-        time_obj.hour, rounded_minute
+        timeObj.year, timeObj.month, timeObj.day,
+        timeObj.hour, roundedMinute
     )
 
-def task_overlap(start_time, end_time, task):
-    task_start_time = datetime.datetime.strptime(task['start_time'], "%H:%M")
-    task_end_time = datetime.datetime.strptime(task['end_time'], "%H:%M")
-    return not (end_time <= task_start_time or start_time >= task_end_time)
+def taskOverlap(startTime, endTime, task):
+    taskStartTime = datetime.datetime.strptime(task['start_time'], "%H:%M")
+    taskEndTime = datetime.datetime.strptime(task['end_time'], "%H:%M")
+    return not (endTime <= taskStartTime or startTime >= taskEndTime)
 
 
 ##################################################
@@ -242,7 +222,7 @@ def task_overlap(start_time, end_time, task):
 # Function to display schedule in table format in the command Line Interface
 def displayScheduleTable(schedule):
     table = prettytable.PrettyTable()
-    table.field_names = ['Task Name', 'Date', 'Start Time', 'End Time', 'Priority']
+    table.fieldNames = ['Task Name', 'Date', 'Start Time', 'End Time', 'Priority']
 
     for task in schedule:
         table.add_row([task['task_name'], task['date'], task['start_time'], task['end_time'], task['priority']])
@@ -258,35 +238,35 @@ def geneticAlgorithm(tasks, progressCallback=None):
     # Step 1: Initialise the population
     population = initialiseSchedule(tasks, populationSize)
 
-    def best_fitness(population):
+    def bestFitness(population):
         return max(population, key=evaluateSchedule)
 
     def replace(population, children):
         # Combine the population and children, and select the best individual
-        combined_population = population + children
-        fitness_scores = [evaluateSchedule(schedule) for schedule in combined_population]
-        sorted_population = [x for _, x in sorted(zip(fitness_scores, combined_population), key=lambda pair: pair[0], reverse=True)]
+        combinedPopulation = population + children
+        fitnessScores = [evaluateSchedule(schedule) for schedule in combinedPopulation]
+        sortedPopulation = [x for _, x in sorted(zip(fitnessScores, combinedPopulation), key=lambda pair: pair[0], reverse=True)]
 
-        return sorted_population[:populationSize]
+        return sortedPopulation[:populationSize]
 
-    previous_best_fitness = float('inf')  # Initialize with a large value
+    previousBestFitness = float('inf')  # Initialize with a large value
     for generation in range(numGenerations):
 
         if progressCallback:
             progressCallback((generation + 1) * 100 / numGenerations)
 
         # Step 2: Evaluate fitness
-        fitness_scores = [evaluateSchedule(schedule) for schedule in population]
+        fitnessScores = [evaluateSchedule(schedule) for schedule in population]
 
         # Step 3: Selection
-        selected_parents = tournamentSelection(population, fitness_scores, tournamentSize)
+        selectedParents = tournamentSelection(population, fitnessScores, tournamentSize)
 
         # Step 4: Crossover
         children = []
-        for i in range(0, len(selected_parents), 2):
-            parent1 = selected_parents[i]
-            parent2 = selected_parents[i + 1]
-            child1, child2 = twoPointcrossover(parent1, parent2)
+        for i in range(0, len(selectedParents), 2):
+            parent1 = selectedParents[i]
+            parent2 = selectedParents[i + 1]
+            child1, child2 = uniformCrossover(parent1, parent2)
             children.extend([child1, child2])
 
         # Step 5: Mutation
@@ -294,32 +274,27 @@ def geneticAlgorithm(tasks, progressCallback=None):
             mutate(child)
 
         # Step 6: Create Next generation
-        population = selectNextGeneration(population + children, fitness_scores)
+        population = selectNextGeneration(population + children, fitnessScores)
         replace(population, children)
 
         # Return the best schedule from the final population
-        best_schedule = max(population, key=evaluateSchedule)
-        best_fitness = evaluateSchedule(best_schedule)
+        bestSchedule = max(population, key=evaluateSchedule)
+        bestFitness = evaluateSchedule(bestSchedule)
 
         # Print current best fitness for monitoring
-        print(f"Generation {generation + 1}: Best Fitness - {best_fitness}")
+        print(f"Generation {generation + 1}: Best Fitness - {bestFitness}")
 
         # Check for convergence
-        if previous_best_fitness == convergenceThreshold:
+        if previousBestFitness == convergenceThreshold:
             print(f"Converged at generation {generation + 1}")
             break
 
-        previous_best_fitness = best_fitness
+        previousBestFitness = bestFitness
 
     # Print the best schedule in table format
     print("Best Schedule:")
-    displayScheduleTable(best_schedule)
+    displayScheduleTable(bestSchedule)
 
-    return best_schedule
+    return bestSchedule
 
 ##################################################
-
-# Using the genetic algorithm with the test data
-#test_population_size = 10  # Adjust as needed
-#test_population = initialize_test_schedule(test_tasks, test_population_size)
-#best_schedule = geneticAlgorithm(test_population)
