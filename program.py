@@ -265,7 +265,7 @@ class Window(QWidget):
         task_details = selected_item.text().split(" - ")
 
         # Extracting task details
-        task_name, start_time, end_time = task_details[0], task_details[1], task_details[2]
+        task_name, start_time, end_time, priority = task_details[0], task_details[1], task_details[2], task_details[3].strip()
 
         # Ask user for new details
         new_task_name, ok = QInputDialog.getText(self, "Edit Task", "Enter new task name:", text=task_name)
@@ -279,6 +279,10 @@ class Window(QWidget):
         new_end_time, ok = QInputDialog.getText(self, "Edit Task", "Enter new end time:", text=end_time)
         if not ok:
             return
+        
+        new_priority, ok = QInputDialog.getItem(self, "Edit Task", "Select new priority:", ["One-time event", "Occasional event", "Regular Event", "Everyday Event"], 0, False)
+        if not ok:
+            return
 
         # Update the database
         conn = sqlite3.connect('data.db')
@@ -286,8 +290,8 @@ class Window(QWidget):
 
         date = self.calendarWidget.selectedDate().toPyDate()
 
-        query = "UPDATE planner SET task = ?, startTime = ?, endTime = ? WHERE task = ? AND date = ? AND startTime = ? AND endTime = ?"
-        row = (new_task_name, new_start_time, new_end_time, task_name, date, start_time, end_time)
+        query = "UPDATE planner SET task = ?, startTime = ?, endTime = ?, priority = ? WHERE task = ? AND date = ? AND startTime = ? AND endTime = ? AND priority = ?"
+        row = (new_task_name, new_start_time, new_end_time, new_priority, task_name, date, start_time, end_time, priority)
 
         cursor.execute(query, row)
         conn.commit()
